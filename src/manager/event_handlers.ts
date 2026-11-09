@@ -169,6 +169,23 @@ export async function onUnminimize(actor: RoundedWindowActor) {
                 source.disconnect(id);
             }
         });
+    } else if (
+        shadow &&
+        roundedCornersEffect &&
+        !roundedCornersEffect.enabled
+    ) {
+        // `onMinimize` disables the effect when the magic lamp effect is used,
+        // and it is only re-enabled above once the unminimize animation ends.
+        // If the window is restored without that animation (for example from
+        // the dock into another workspace), nothing would re-enable it, and the
+        // window would stay without rounded corners until its size changes.
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 400, () => {
+            if (actor.rwcCustomData === undefined) return GLib.SOURCE_REMOVE;
+            logDebug('Unminimizing without magic lamp effect');
+            shadow.visible = actor.visible;
+            refreshRoundedCorners(actor);
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     // Chromium has a bug where windows are sometimes unminimized to the
